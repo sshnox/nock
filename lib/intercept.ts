@@ -14,7 +14,7 @@ function enableNetConnect(
   if (typeof matcher === 'string') {
     allowNetConnect = new RegExp(matcher)
   } else if (matcher instanceof RegExp) {
-    allowNetConnect = matcher
+    allowNetConnect = { test: url => common.matchStringOrRegexp(url, matcher) }
   } else if (typeof matcher === 'function') {
     allowNetConnect = { test: matcher }
   } else {

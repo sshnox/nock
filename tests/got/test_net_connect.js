@@ -80,6 +80,23 @@ describe('`enableNetConnect()`', () => {
     )
   })
 
+  for (const flag of ['g', 'y']) {
+    it(`allows repeated connections with the ${flag} regexp flag`, async () => {
+      const { origin } = await servers.startHttpServer((request, response) => {
+        response.end('ok')
+      })
+
+      nock.enableNetConnect(new RegExp('^localhost:', flag))
+
+      expect((await got(origin)).body).to.equal('ok')
+      expect((await got(origin)).body).to.equal('ok')
+      await assertRejects(
+        got('https://example.test/'),
+        /Nock: Disallowed net connect for "example.test:443\/"/,
+      )
+    })
+  }
+
   it('enables real HTTP request only for specified domain, via function', async () => {
     const onResponse = sinon.spy()
     const { origin } = await servers.startHttpServer((request, response) => {
