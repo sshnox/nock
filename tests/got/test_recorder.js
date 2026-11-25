@@ -113,6 +113,44 @@ describe('Recorder', () => {
     expect(recorded).to.have.lengthOf(2)
   })
 
+  for (const outputObjects of [true, false]) {
+    it(`preserves repeated Set-Cookie headers in ${outputObjects ? 'object' : 'code'} recordings`, async () => {
+      const cookies = [
+        'session=abc; Path=/; HttpOnly',
+        'csrf=xyz; Path=/',
+      ]
+      const { origin } = await servers.startHttpServer((request, response) => {
+        response.setHeader('Set-Cookie', cookies)
+        response.end('ok')
+      })
+
+      nock.restore()
+      nock.recorder.clear()
+      nock.recorder.rec({ dont_print: true, output_objects: outputObjects })
+
+      await got(origin)
+
+      nock.restore()
+      const recorded = nock.recorder.play()
+      nock.recorder.clear()
+      expect(recorded).to.have.lengthOf(1)
+
+      if (outputObjects) {
+        expect(recorded[0].rawHeaders['set-cookie']).to.deep.equal(cookies)
+
+        nock.activate()
+        const scopes = nock.define(recorded)
+        const replayed = await got(origin)
+        expect(replayed.headers['set-cookie']).to.deep.equal(cookies)
+        scopes.forEach(scope => scope.done())
+      } else {
+        expect(recorded[0]).to.include("'set-cookie': [")
+        cookies.forEach(cookie => expect(recorded[0]).to.include(cookie))
+        nock.activate()
+      }
+    })
+  }
+
   it('records objects', async () => {
     const gotRequest = sinon.spy()
 
