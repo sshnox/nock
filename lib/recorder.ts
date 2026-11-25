@@ -75,12 +75,15 @@ function getBodyFromChunks(chunks: Buffer[], headers?: Record<string, any>) {
 
 // Headers.entries() can yield repeated Set-Cookie fields. Object.fromEntries()
 // discards all but the last, so preserve them as an array for recording/replay.
-function responseHeadersToObject(headers: Headers): Record<string, string | string[]> {
+function responseHeadersToObject(
+  headers: Headers,
+): Record<string, string | string[]> {
   const result: Record<string, string | string[]> = Object.fromEntries(
     headers.entries(),
   )
   const cookies = headers.getSetCookie()
-  if (cookies.length > 0) {
+  // Retain the existing scalar representation for a single cookie.
+  if (cookies.length > 1) {
     result['set-cookie'] = cookies
   }
   return result
